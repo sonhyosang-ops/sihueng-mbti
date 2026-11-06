@@ -3,13 +3,13 @@
 
 export const DIMENSIONS = [
   { key: "EI", left: "E", right: "I", leftName: "외향", rightName: "내향",
-    leftDesc: "친구들과 함께할 때 힘이 나요", rightDesc: "혼자만의 시간에 힘이 나요", color: "#ff8a3d" },
+    leftDesc: "친구들과 함께할 때 힘이 나요", rightDesc: "혼자만의 시간에 힘이 나요", color: "#ff9500" },
   { key: "SN", left: "S", right: "N", leftName: "감각", rightName: "직관",
-    leftDesc: "보고 듣는 사실이 중요해요", rightDesc: "상상과 아이디어가 좋아요", color: "#22b573" },
+    leftDesc: "보고 듣는 사실이 중요해요", rightDesc: "상상과 아이디어가 좋아요", color: "#28b14c" },
   { key: "TF", left: "T", right: "F", leftName: "사고", rightName: "감정",
-    leftDesc: "논리적으로 따져 봐요", rightDesc: "마음과 기분을 먼저 살펴요", color: "#3b82f6" },
+    leftDesc: "논리적으로 따져 봐요", rightDesc: "마음과 기분을 먼저 살펴요", color: "#007aff" },
   { key: "JP", left: "J", right: "P", leftName: "판단", rightName: "인식",
-    leftDesc: "계획을 세우는 게 좋아요", rightDesc: "그때그때 자유로운 게 좋아요", color: "#a855f7" },
+    leftDesc: "계획을 세우는 게 좋아요", rightDesc: "그때그때 자유로운 게 좋아요", color: "#af52de" },
 ];
 
 // 각 문항: a 선택 = 왼쪽 글자(E,S,T,J), b 선택 = 오른쪽 글자(I,N,F,P)

@@ -2,127 +2,175 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="robots" content="noindex" />
-  <title>나의 성격 탐험</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>성격 탐험</title>
+  <link rel="stylesheet" href="vendor/pretendard/pretendardvariable-dynamic-subset.css" />
   <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%231d1d1f'/><text x='32' y='42' font-family='Arial' font-weight='700' font-size='26' fill='white' text-anchor='middle'>EI</text></svg>" />
 </head>
 <body>
-  <div class="bg-deco" aria-hidden="true">
-    <span>⭐</span><span>☁️</span><span>🌈</span><span>✨</span><span>🎈</span><span>☁️</span>
-  </div>
-
-  <!-- 1. 시작 화면 -->
-  <main id="screen-start" class="screen active">
-    <div class="card start-card">
-      <div class="mascot">🧭</div>
-      <h1>나의 성격 탐험</h1>
-      <p class="lead">12개의 재미있는 질문으로 <b>나만의 성격 유형</b>을 알아보아요!<br />정답은 없어요. 마음 가는 대로 골라 주세요 😊</p>
-
-      <form id="start-form" autocomplete="off">
-        <label class="field">
-          <span>내 이름</span>
-          <input id="in-name" type="text" maxlength="10" placeholder="예) 김하늘" required />
-        </label>
-        <div class="field">
-          <span>학년</span>
-          <div class="grade-row" role="radiogroup" aria-label="학년">
-            <label><input type="radio" name="grade" value="1" /><b>1</b></label>
-            <label><input type="radio" name="grade" value="2" /><b>2</b></label>
-            <label><input type="radio" name="grade" value="3" /><b>3</b></label>
-            <label><input type="radio" name="grade" value="4" /><b>4</b></label>
-            <label><input type="radio" name="grade" value="5" /><b>5</b></label>
-            <label><input type="radio" name="grade" value="6" /><b>6</b></label>
-          </div>
-        </div>
-        <button class="btn btn-primary btn-big" type="submit">탐험 시작! 🚀</button>
-      </form>
-
-      <p class="privacy">🔒 입력한 내용과 결과는 어디에도 저장되지 않아요. 결과지를 인쇄하면 바로 지워져요.</p>
-    </div>
-
-    <details class="teacher" id="teacher">
-      <summary>⚙️ 선생님 설정 <span id="ai-badge" class="badge off">AI 해설 꺼짐</span></summary>
-      <div class="teacher-body">
-        <p>Claude API 키를 넣으면 학생의 답변에 맞춘 <b>AI 맞춤 해설</b>이 결과지에 들어가요.
-          키가 없어도 기본 해설로 결과지를 인쇄할 수 있어요.</p>
-        <label class="field small">
-          <span>Claude API 키</span>
-          <input id="in-key" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false" />
-        </label>
-        <div class="teacher-actions">
-          <button id="btn-key-save" class="btn btn-small" type="button">저장</button>
-          <button id="btn-key-clear" class="btn btn-small btn-ghost" type="button">키 지우기</button>
-        </div>
-        <p class="hint">키는 이 브라우저 탭에만 임시로 보관되고 탭을 닫으면 사라져요. 학생 이름은 AI로 보내지 않아요.
-          공용 PC에서는 수업이 끝나면 꼭 “키 지우기”를 눌러 주세요.</p>
+  <header class="nav">
+    <div class="nav-inner">
+      <button class="nav-brand" id="nav-home" type="button">성격 탐험</button>
+      <div class="nav-right">
+        <span class="nav-status" id="ai-status">기본 해설</span>
+        <button class="nav-link" id="btn-teacher" type="button">선생님 설정</button>
       </div>
-    </details>
+    </div>
+    <div class="nav-progress" aria-hidden="true"><i id="progress-fill"></i></div>
+  </header>
+
+  <!-- ───────── 1. 시작 ───────── -->
+  <main id="screen-start" class="screen active">
+    <section class="hero">
+      <p class="eyebrow reveal">초등학생을 위한 성격 탐험</p>
+      <h1 class="hero-title reveal">나를 알아가는<br />열두 개의 질문.</h1>
+      <p class="hero-sub reveal">정답은 없어요. 마음이 가는 쪽을 고르면 돼요.</p>
+      <div class="hero-cta reveal">
+        <a class="btn btn-primary" href="#start">시작하기</a>
+        <a class="link-more" href="#about">어떻게 알아보나요 <span aria-hidden="true">›</span></a>
+      </div>
+      <div class="hero-type reveal" aria-hidden="true"><span id="hero-type">ENFP</span></div>
+    </section>
+
+    <section class="section" id="about">
+      <div class="section-head reveal">
+        <p class="eyebrow">네 가지 방향</p>
+        <h2 class="section-title">나의 마음은<br />어느 쪽으로 기울까요.</h2>
+      </div>
+      <div class="bento">
+        <article class="tile reveal" style="--tint:#ff9500">
+          <p class="tile-label">에너지</p>
+          <p class="tile-pair"><b>E</b><span>/</span><b>I</b></p>
+          <p class="tile-desc">친구들과 함께할 때 힘이 나나요,<br />혼자만의 시간에 힘이 나나요?</p>
+        </article>
+        <article class="tile reveal" style="--tint:#28b14c">
+          <p class="tile-label">바라보는 방법</p>
+          <p class="tile-pair"><b>S</b><span>/</span><b>N</b></p>
+          <p class="tile-desc">눈에 보이는 사실이 먼저인가요,<br />떠오르는 상상이 먼저인가요?</p>
+        </article>
+        <article class="tile reveal" style="--tint:#007aff">
+          <p class="tile-label">결정하는 방법</p>
+          <p class="tile-pair"><b>T</b><span>/</span><b>F</b></p>
+          <p class="tile-desc">무엇이 맞는지 따져 보나요,<br />모두의 마음을 먼저 살피나요?</p>
+        </article>
+        <article class="tile reveal" style="--tint:#af52de">
+          <p class="tile-label">생활 방식</p>
+          <p class="tile-pair"><b>J</b><span>/</span><b>P</b></p>
+          <p class="tile-desc">미리 계획하는 게 편한가요,<br />그때그때 정하는 게 편한가요?</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section section-gray" id="start">
+      <div class="start-wrap reveal">
+        <p class="eyebrow">준비됐나요</p>
+        <h2 class="section-title">이름과 학년을<br />알려 주세요.</h2>
+        <form id="start-form" class="start-form" autocomplete="off" novalidate>
+          <label class="field">
+            <span class="field-label">이름</span>
+            <input id="in-name" type="text" maxlength="10" placeholder="김하늘" required />
+          </label>
+          <fieldset class="field">
+            <legend class="field-label">학년</legend>
+            <div class="segmented" role="radiogroup" aria-label="학년">
+              <label><input type="radio" name="grade" value="1" /><span>1학년</span></label>
+              <label><input type="radio" name="grade" value="2" /><span>2학년</span></label>
+              <label><input type="radio" name="grade" value="3" /><span>3학년</span></label>
+              <label><input type="radio" name="grade" value="4" /><span>4학년</span></label>
+              <label><input type="radio" name="grade" value="5" /><span>5학년</span></label>
+              <label><input type="radio" name="grade" value="6" /><span>6학년</span></label>
+            </div>
+          </fieldset>
+          <button class="btn btn-primary btn-wide" type="submit">탐험 시작하기</button>
+        </form>
+        <p class="fineprint">입력한 이름과 답은 어디에도 저장되지 않으며, 결과지를 인쇄하면 바로 지워집니다.</p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>성격 유형은 나를 정하는 정답이 아니라, 나를 알아가는 하나의 지도예요.</p>
+    </footer>
   </main>
 
-  <!-- 2. 질문 화면 -->
+  <!-- ───────── 2. 질문 ───────── -->
   <main id="screen-quiz" class="screen">
-    <div class="quiz-top">
-      <button id="btn-back" class="btn btn-ghost btn-small" type="button">← 이전</button>
-      <div class="progress" aria-hidden="true">
-        <div class="progress-fill" id="progress-fill"></div>
-        <div class="progress-runner" id="progress-runner">🚀</div>
-      </div>
-      <div class="progress-num" id="progress-num">1 / 12</div>
-    </div>
-    <div class="card quiz-card" id="quiz-card">
-      <div class="q-num" id="q-num">Q1</div>
-      <h2 class="q-text" id="q-text"></h2>
+    <section class="quiz">
+      <p class="quiz-count" id="q-count">질문 1 / 12</p>
+      <h2 class="quiz-q" id="q-text"></h2>
       <div class="choices">
         <button class="choice" id="choice-a" type="button">
-          <span class="choice-emoji"></span><span class="choice-text"></span><kbd>1</kbd>
+          <span class="choice-key">A</span>
+          <span class="choice-text"></span>
         </button>
         <button class="choice" id="choice-b" type="button">
-          <span class="choice-emoji"></span><span class="choice-text"></span><kbd>2</kbd>
+          <span class="choice-key">B</span>
+          <span class="choice-text"></span>
         </button>
       </div>
-    </div>
+      <button class="link-back" id="btn-back" type="button"><span aria-hidden="true">‹</span> 이전 질문</button>
+    </section>
   </main>
 
-  <!-- 3. 분석 중 -->
+  <!-- ───────── 3. 분석 중 ───────── -->
   <main id="screen-loading" class="screen">
-    <div class="card loading-card">
-      <div class="loader"><span>🔍</span></div>
-      <h2 id="loading-title">나의 성격을 분석하고 있어요…</h2>
-      <p id="loading-msg">조금만 기다려 주세요!</p>
-    </div>
+    <section class="loading">
+      <div class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <h2 class="loading-title">결과를 정리하고 있어요.</h2>
+      <p class="loading-msg" id="loading-msg">답변을 하나씩 살펴보는 중</p>
+    </section>
   </main>
 
-  <!-- 4. 결과 -->
+  <!-- ───────── 4. 결과 ───────── -->
   <main id="screen-result" class="screen">
-    <div class="result-bar">
-      <div class="result-hello" id="result-hello"></div>
-      <div class="result-actions">
-        <button id="btn-print" class="btn btn-primary" type="button">🖨️ 결과지 인쇄하기</button>
-        <button id="btn-reset" class="btn btn-ghost" type="button">처음으로 (삭제)</button>
+    <section class="result-hero">
+      <p class="eyebrow" id="result-eyebrow"></p>
+      <h1 class="result-type" id="result-type"></h1>
+      <p class="result-nick" id="result-nick"></p>
+      <div class="hero-cta">
+        <button id="btn-print" class="btn btn-primary" type="button">결과지 인쇄하기</button>
+        <button id="btn-reset" class="link-more" type="button">처음으로 <span aria-hidden="true">›</span></button>
       </div>
-    </div>
-    <div class="sheet-wrap" id="sheet-wrap">
-      <div class="sheet-scale" id="sheet-scale"></div>
-    </div>
+    </section>
+    <section class="stage">
+      <p class="stage-note">A4 한 장으로 인쇄됩니다 · 인쇄 설정에서 ‘배경 그래픽’을 켜 주세요</p>
+      <div class="sheet-wrap" id="sheet-wrap">
+        <div class="sheet-scale" id="sheet-scale"></div>
+      </div>
+    </section>
   </main>
 
-  <!-- 인쇄 후 확인 -->
-  <div class="modal" id="modal-after" hidden>
-    <div class="card modal-card">
-      <div class="mascot small">🖨️</div>
-      <h2>인쇄가 잘 되었나요?</h2>
-      <p><b id="countdown">20</b>초 뒤에 결과가 자동으로 삭제되고 처음 화면으로 돌아가요.</p>
-      <div class="modal-actions">
-        <button id="btn-done" class="btn btn-primary" type="button">네! 지금 삭제하기 ✅</button>
-        <button id="btn-reprint" class="btn btn-ghost" type="button">다시 인쇄할래요</button>
+  <!-- 선생님 설정 -->
+  <dialog class="dialog" id="dlg-teacher">
+    <form method="dialog" class="dialog-body">
+      <h3>선생님 설정</h3>
+      <p>Claude API 키를 입력하면 학생이 고른 답을 바탕으로 한 맞춤 해설이 결과지에 들어갑니다. 키가 없어도 기본 해설로 인쇄할 수 있어요.</p>
+      <label class="field">
+        <span class="field-label">Claude API 키</span>
+        <input id="in-key" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
+      </label>
+      <p class="fineprint left">키는 이 브라우저 탭에만 임시로 보관되고 탭을 닫으면 사라집니다. 학생 이름은 AI로 전송되지 않아요. 공용 PC에서는 수업 후 키를 지워 주세요.</p>
+      <div class="dialog-actions">
+        <button id="btn-key-clear" class="btn btn-secondary" type="button">키 지우기</button>
+        <button id="btn-key-save" class="btn btn-primary" type="button">저장</button>
+      </div>
+      <button class="dialog-close" value="close" aria-label="닫기">×</button>
+    </form>
+  </dialog>
+
+  <!-- 인쇄 후 -->
+  <dialog class="dialog" id="dlg-after">
+    <div class="dialog-body center">
+      <h3>인쇄가 잘 되었나요?</h3>
+      <p><b id="countdown">20</b>초 뒤 결과가 삭제되고 처음 화면으로 돌아갑니다.</p>
+      <div class="dialog-actions stack">
+        <button id="btn-done" class="btn btn-primary" type="button">지금 삭제하기</button>
+        <button id="btn-reprint" class="btn btn-secondary" type="button">다시 인쇄</button>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

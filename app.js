@@ -22,7 +22,8 @@ const screens = ["start", "quiz", "loading", "result"];
 
 function show(name) {
   for (const s of screens) $(`screen-${s}`).classList.toggle("active", s === name);
-  window.scrollTo(0, 0);
+  document.body.classList.toggle("in-quiz", name === "quiz");
+  window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 function toast(msg, ms = 3200) {
@@ -34,36 +35,69 @@ function toast(msg, ms = 3200) {
 }
 
 // ─────────────────────────────────────────────
-// API 키 (선생님 설정)
+// 시작 화면 연출: 스크롤 등장 · 유형 글자 바뀜
+// ─────────────────────────────────────────────
+const io = "IntersectionObserver" in window
+  ? new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" })
+  : null;
+function armReveal() {
+  document.querySelectorAll(".reveal").forEach((el) => (io ? io.observe(el) : el.classList.add("in")));
+}
+armReveal();
+
+const TYPE_CYCLE = ["ENFP", "ISTJ", "INFP", "ESTJ", "INTP", "ESFJ", "ENTJ", "ISFP", "INFJ", "ESTP", "ISTP", "ENFJ", "ISFJ", "ENTP", "INTJ", "ESFP"];
+let cycleIdx = 0;
+setInterval(() => {
+  const el = $("hero-type");
+  if (!$("screen-start").classList.contains("active") || document.hidden) return;
+  el.classList.add("swap");
+  setTimeout(() => {
+    cycleIdx = (cycleIdx + 1) % TYPE_CYCLE.length;
+    el.textContent = TYPE_CYCLE[cycleIdx];
+    el.classList.remove("swap");
+  }, 500);
+}, 2600);
+
+// ─────────────────────────────────────────────
+// 선생님 설정 (API 키)
 // ─────────────────────────────────────────────
 function safeGet(k) { try { return sessionStorage.getItem(k) || ""; } catch { return ""; } }
 function safeSet(k, v) { try { v ? sessionStorage.setItem(k, v) : sessionStorage.removeItem(k); } catch { /* 저장 불가 환경은 메모리만 사용 */ } }
 let apiKey = safeGet(KEY_STORAGE);
 
-function refreshBadge() {
-  const b = $("ai-badge");
-  b.textContent = apiKey ? "AI 해설 켜짐" : "AI 해설 꺼짐";
-  b.classList.toggle("off", !apiKey);
-  b.classList.toggle("on", !!apiKey);
+function refreshStatus() {
+  const s = $("ai-status");
+  s.textContent = apiKey ? "AI 맞춤 해설" : "기본 해설";
+  s.classList.toggle("on", !!apiKey);
 }
+refreshStatus();
 
+$("btn-teacher").addEventListener("click", () => $("dlg-teacher").showModal());
 $("btn-key-save").addEventListener("click", () => {
   const v = $("in-key").value.trim();
   if (!v) return toast("API 키를 입력해 주세요.");
   apiKey = v;
   safeSet(KEY_STORAGE, v);
   $("in-key").value = "";
-  refreshBadge();
-  toast("AI 맞춤 해설이 켜졌어요 ✨");
+  refreshStatus();
+  $("dlg-teacher").close();
+  toast("AI 맞춤 해설을 사용합니다.");
 });
 $("btn-key-clear").addEventListener("click", () => {
   apiKey = "";
   safeSet(KEY_STORAGE, "");
   $("in-key").value = "";
-  refreshBadge();
-  toast("API 키를 지웠어요.");
+  refreshStatus();
+  toast("API 키를 지웠습니다.");
 });
-refreshBadge();
+
+$("nav-home").addEventListener("click", () => {
+  if ($("screen-start").classList.contains("active")) return window.scrollTo({ top: 0, behavior: "smooth" });
+  if (state.result && !confirm("결과를 삭제하고 처음 화면으로 돌아갈까요?")) return;
+  wipe(!!state.result);
+});
 
 // ─────────────────────────────────────────────
 // 시작
@@ -72,13 +106,13 @@ $("start-form").addEventListener("submit", (e) => {
   e.preventDefault();
   const name = $("in-name").value.trim();
   const grade = document.querySelector('input[name="grade"]:checked')?.value || "";
-  if (!name) { $("in-name").focus(); return toast("이름을 적어 주세요 ✏️"); }
-  if (!grade) return toast("학년을 골라 주세요 🙂");
+  if (!name) { $("in-name").focus(); return toast("이름을 적어 주세요."); }
+  if (!grade) return toast("학년을 골라 주세요.");
   state = freshState();
   state.name = name;
   state.grade = grade;
-  renderQuestion();
   show("quiz");
+  renderQuestion();
 });
 
 // ─────────────────────────────────────────────
@@ -87,33 +121,30 @@ $("start-form").addEventListener("submit", (e) => {
 function renderQuestion() {
   const i = state.index;
   const q = QUESTIONS[i];
-  const dim = DIMENSIONS.find((d) => d.key === q.dim);
-  const card = $("quiz-card");
-  card.style.setProperty("--accent", dim.color);
-  card.classList.remove("pop");
-  void card.offsetWidth; // 애니메이션 재시작
-  card.classList.add("pop");
-
-  $("q-num").textContent = `Q${i + 1}`;
+  $("q-count").textContent = `질문 ${i + 1} / ${QUESTIONS.length}`;
   $("q-text").textContent = q.q;
+  const choices = document.querySelector(".choices");
+  choices.classList.remove("locked");
   for (const side of ["a", "b"]) {
     const btn = $(`choice-${side}`);
-    btn.querySelector(".choice-emoji").textContent = q[side].emoji;
     btn.querySelector(".choice-text").textContent = q[side].text;
     btn.classList.toggle("picked", state.answers[i] === side);
     btn.disabled = false;
   }
-  const pct = (i / QUESTIONS.length) * 100;
-  $("progress-fill").style.width = `${pct}%`;
-  $("progress-runner").style.left = `${pct}%`;
-  $("progress-num").textContent = `${i + 1} / ${QUESTIONS.length}`;
-  $("btn-back").style.visibility = "visible";
+  for (const el of [$("q-text"), choices]) {
+    el.classList.remove("enter");
+    void el.offsetWidth; // 애니메이션 재시작
+    el.classList.add("enter");
+  }
+  $("progress-fill").style.width = `${(i / QUESTIONS.length) * 100}%`;
 }
 
 function choose(side) {
   const i = state.index;
   state.answers[i] = side;
-  $(`choice-${side}`).classList.add("picked");
+  $("choice-a").classList.toggle("picked", side === "a");
+  $("choice-b").classList.toggle("picked", side === "b");
+  document.querySelector(".choices").classList.add("locked");
   $("choice-a").disabled = $("choice-b").disabled = true;
   setTimeout(() => {
     if (i < QUESTIONS.length - 1) {
@@ -121,10 +152,9 @@ function choose(side) {
       renderQuestion();
     } else {
       $("progress-fill").style.width = "100%";
-      $("progress-runner").style.left = "100%";
       finish();
     }
-  }, 260);
+  }, 380);
 }
 
 $("choice-a").addEventListener("click", () => choose("a"));
@@ -136,8 +166,9 @@ $("btn-back").addEventListener("click", () => {
 });
 document.addEventListener("keydown", (e) => {
   if (!$("screen-quiz").classList.contains("active") || $("choice-a").disabled) return;
-  if (e.key === "1" || e.key.toLowerCase() === "a") choose("a");
-  if (e.key === "2" || e.key.toLowerCase() === "b") choose("b");
+  const k = e.key.toLowerCase();
+  if (k === "1" || k === "a") choose("a");
+  if (k === "2" || k === "b") choose("b");
 });
 
 // ─────────────────────────────────────────────
@@ -251,11 +282,12 @@ function mergeResult(base, ai) {
   };
 }
 
+
 const LOADING_MSGS = [
-  "답변을 하나하나 살펴보고 있어요 👀",
-  "나만의 강점을 찾고 있어요 ⭐",
-  "딱 맞는 별명을 고르고 있어요 🏷️",
-  "예쁜 결과지를 꾸미고 있어요 🎨",
+  "답변을 하나씩 살펴보는 중",
+  "나만의 강점을 찾는 중",
+  "어울리는 별명을 고르는 중",
+  "결과지를 정리하는 중",
 ];
 
 async function finish() {
@@ -272,10 +304,10 @@ async function finish() {
       ai = await askClaude(type, dims);
     } catch (err) {
       console.warn("Claude API 호출 실패, 기본 해설을 사용합니다:", err);
-      toast("AI 연결이 잠시 안 돼서 기본 해설로 만들었어요.", 4500);
+      toast("AI 연결이 원활하지 않아 기본 해설로 만들었어요.", 4500);
     }
   } else {
-    await new Promise((r) => setTimeout(r, 1600)); // 두근두근 연출
+    await new Promise((r) => setTimeout(r, 1600));
   }
   clearInterval(ticker);
 
@@ -299,98 +331,93 @@ function today() {
 
 function dimRow(d) {
   const leftWin = d.pick === d.left;
-  const segs = [];
-  for (let k = 0; k < 3; k++) segs.push(`<i class="${k < d.leftCount ? "on" : ""}"></i>`);
-  const desc = leftWin ? d.leftDesc : d.rightDesc;
+  const segs = [0, 1, 2].map((k) => `<i class="${k < d.leftCount ? "on" : ""}"></i>`).join("");
   return `
     <div class="d-row" style="--c:${d.color}">
-      <div class="d-side ${leftWin ? "win" : ""}"><b>${d.left}</b><small>${d.leftName}</small></div>
-      <div class="d-mid">
-        <div class="d-track">${segs.join("")}</div>
-        <div class="d-desc">${esc(desc)}</div>
-      </div>
-      <div class="d-side right ${leftWin ? "" : "win"}"><b>${d.right}</b><small>${d.rightName}</small></div>
+      <div class="d-end ${leftWin ? "win" : ""}"><b>${d.left}</b><small>${d.leftName}</small></div>
+      <div class="d-track">${segs}</div>
+      <div class="d-end right ${leftWin ? "" : "win"}"><small>${d.rightName}</small><b>${d.right}</b></div>
+      <p class="d-desc">${esc(leftWin ? d.leftDesc : d.rightDesc)}</p>
     </div>`;
 }
 
 function renderResult() {
   const { type, dims, content: c } = state.result;
-  const letters = dims.map((d) => `<span style="color:${d.color}">${d.pick}</span>`).join("");
-  $("result-hello").innerHTML = `<b>${esc(state.name)}</b>의 유형은 <b class="type-chip">${type}</b> ${c.emoji}`;
+  $("result-eyebrow").textContent = `${state.name}의 성격 유형`;
+  $("result-type").textContent = type;
+  $("result-nick").textContent = c.nickname;
 
   $("sheet-scale").innerHTML = `
   <article class="sheet" id="sheet">
     <div class="sheet-inner" id="sheet-inner">
-      <header class="s-head">
-        <div class="s-brand"><span class="s-logo">🧭</span>나의 성격 탐험 보고서</div>
-        <div class="s-meta">
-          <span>이름 <b>${esc(state.name)}</b></span>
-          <span>학년 <b>${esc(state.grade)}학년</b></span>
-          <span>날짜 <b>${today()}</b></span>
-        </div>
+      <header class="sh-top">
+        <p class="sh-brand">성격 탐험 리포트<small>12문항 간이 성격 유형 검사</small></p>
+        <dl class="sh-meta">
+          <div><dt>이름</dt><dd>${esc(state.name)}</dd></div>
+          <div><dt>학년</dt><dd>${esc(state.grade)}학년</dd></div>
+          <div><dt>날짜</dt><dd>${today()}</dd></div>
+        </dl>
       </header>
 
-      <section class="s-hero">
-        <div class="s-emoji">${c.emoji}</div>
-        <div class="s-hero-text">
-          <div class="s-label">나의 성격 유형은</div>
-          <div class="s-type">${letters}</div>
-          <div class="s-nick">${esc(c.nickname)}</div>
+      <section class="sh-hero">
+        <div>
+          <p class="sh-eyebrow">나의 성격 유형</p>
+          <p class="sh-type">${dims.map((d) => `<span style="--c:${d.color}">${d.pick}</span>`).join("")}</p>
+          <p class="sh-nick">${esc(c.nickname)}</p>
         </div>
+        <div class="sh-mark"><span>${c.emoji}</span></div>
+      </section>
+      <p class="sh-summary">${esc(c.summary)}</p>
+
+      <section class="sh-dims">
+        <p class="sh-label">네 가지 방향</p>
+        <div class="sh-dim-grid">${dims.map(dimRow).join("")}</div>
       </section>
 
-      <section class="s-dims">${dims.map(dimRow).join("")}</section>
-
-      <section class="s-box s-summary">
-        <h3>🔎 나는 이런 사람이에요</h3>
-        <p>${esc(c.summary)}</p>
-      </section>
-
-      <div class="s-grid">
-        <section class="s-box s-yellow">
-          <h3>⭐ 나의 강점</h3>
+      <div class="sh-grid">
+        <section class="sh-cell" style="--accent:var(--c-ei)">
+          <h3><em>01</em>나의 강점</h3>
           <ul>${c.strengths.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>
         </section>
-        <section class="s-box s-green">
-          <h3>🌱 이렇게 하면 더 멋져요</h3>
+        <section class="sh-cell" style="--accent:var(--c-sn)">
+          <h3><em>02</em>이렇게 하면 더 멋져요</h3>
           <ul>${c.growth.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>
         </section>
-        <section class="s-box s-blue">
-          <h3>📚 나에게 맞는 공부 꿀팁</h3>
+        <section class="sh-cell" style="--accent:var(--c-tf)">
+          <h3><em>03</em>나에게 맞는 공부법</h3>
           <p>${esc(c.study)}</p>
         </section>
-        <section class="s-box s-pink">
-          <h3>🤝 친구 관계 꿀팁</h3>
+        <section class="sh-cell" style="--accent:var(--c-jp)">
+          <h3><em>04</em>친구와 함께할 때</h3>
           <p>${esc(c.friend)}</p>
         </section>
       </div>
 
-      <section class="s-cheer">
-        <div class="s-cheer-icon">💌</div>
+      <section class="sh-cheer">
+        <p class="sh-label">응원 한마디</p>
         <p>${esc(c.cheer)}</p>
       </section>
 
-      <section class="s-promise">
-        <h3>✏️ 나의 다짐 한마디</h3>
-        <div class="s-lines"><i></i><i></i></div>
+      <section class="sh-promise">
+        <p class="sh-label">나의 다짐</p>
+        <div class="sh-lines"><i></i><i></i></div>
       </section>
 
-      <footer class="s-foot">
-        성격 유형은 정답이 아니라 <b>나를 알아가는 재미있는 지도</b>예요. 사람은 자라면서 얼마든지 달라질 수 있어요!
-        <span class="s-foot-sub">12문항 간이 검사${c.ai ? " · AI 맞춤 해설" : ""} · 이 결과는 어디에도 저장되지 않았어요</span>
+      <footer class="sh-foot">
+        <span>성격 유형은 정답이 아니라 나를 알아가는 하나의 지도예요. 사람은 자라면서 얼마든지 달라질 수 있어요.</span>
+        <span>${c.ai ? "AI 맞춤 해설 · " : ""}저장되지 않음</span>
       </footer>
     </div>
   </article>`;
 }
 
-// 내용이 A4 한 장을 넘치면 글자 크기를 조금씩 줄여서 딱 맞춰요
+// 큰 글씨에서 시작해 A4 한 장을 넘치지 않을 때까지 조금씩 줄여요
 function fitSheet() {
   const sheet = $("sheet");
   const inner = $("sheet-inner");
   if (!sheet || !inner) return;
-  // 큰 글씨에서 시작해 넘치지 않을 때까지 조금씩 줄여요 (측정하는 동안엔 칸을 늘리지 않음)
   sheet.classList.add("measuring");
-  let size = 16.5;
+  let size = 16;
   sheet.style.setProperty("--fs", `${size}px`);
   while (inner.scrollHeight > inner.clientHeight + 1 && size > 10) {
     size -= 0.25;
@@ -406,7 +433,7 @@ function scaleSheet() {
   if (!sheet) return;
   const w = sheet.offsetWidth;
   const h = sheet.offsetHeight;
-  const scale = Math.min(1, (wrap.clientWidth - 8) / w);
+  const scale = Math.min(1, wrap.clientWidth / w);
   scaler.style.transform = `scale(${scale})`;
   scaler.style.width = `${w}px`;
   wrap.style.height = `${h * scale}px`;
@@ -437,9 +464,9 @@ window.addEventListener("afterprint", () => { if (printing) afterPrint(); });
 function afterPrint() {
   printing = false;
   if (!state.result) return;
-  const modal = $("modal-after");
-  if (!modal.hidden) return;
-  modal.hidden = false;
+  const dlg = $("dlg-after");
+  if (dlg.open) return;
+  dlg.showModal();
   let left = AFTER_PRINT_SECONDS;
   $("countdown").textContent = left;
   clearInterval(countdownTimer);
@@ -453,9 +480,10 @@ function afterPrint() {
 $("btn-done").addEventListener("click", () => wipe(true));
 $("btn-reprint").addEventListener("click", () => {
   clearInterval(countdownTimer);
-  $("modal-after").hidden = true;
+  $("dlg-after").close();
   $("btn-print").click();
 });
+$("dlg-after").addEventListener("cancel", (e) => e.preventDefault()); // Esc로 닫혀 데이터가 남지 않도록
 $("btn-reset").addEventListener("click", () => {
   if (confirm("결과를 삭제하고 처음 화면으로 돌아갈까요?")) wipe(true);
 });
@@ -463,16 +491,16 @@ $("btn-reset").addEventListener("click", () => {
 // 모든 학생 데이터 삭제
 function wipe(withToast) {
   clearInterval(countdownTimer);
-  $("modal-after").hidden = true;
+  if ($("dlg-after").open) $("dlg-after").close();
   state = freshState();
   $("sheet-scale").innerHTML = "";
   $("sheet-scale").removeAttribute("style");
   $("sheet-wrap").removeAttribute("style");
-  $("result-hello").textContent = "";
+  for (const id of ["result-eyebrow", "result-type", "result-nick", "q-text"]) $(id).textContent = "";
   $("start-form").reset();
-  $("q-text").textContent = "";
+  $("progress-fill").style.width = "0";
   show("start");
-  if (withToast) toast("결과가 깨끗하게 삭제되었어요 🧹 다음 친구 차례!");
+  if (withToast) toast("결과를 삭제했어요. 다음 친구 차례예요.");
 }
 
 // 한동안 조작이 없으면 자동 삭제 (자리를 비운 사이 정보가 남지 않도록)
