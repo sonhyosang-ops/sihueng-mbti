@@ -24,75 +24,91 @@
 
   <!-- ───────── 1. 시작 ───────── -->
   <main id="screen-start" class="screen active">
-    <section class="hero">
-      <p class="eyebrow reveal">초등학생을 위한 성격 탐험</p>
-      <h1 class="hero-title reveal">나를 알아가는<br />열두 개의 질문.</h1>
-      <p class="hero-sub reveal">정답은 없어요. 마음이 가는 쪽을 고르면 돼요.</p>
-      <div class="hero-cta reveal">
-        <a class="btn btn-primary" href="#start">시작하기</a>
-        <a class="link-more" href="#about">어떻게 알아보나요 <span aria-hidden="true">›</span></a>
-      </div>
-      <div class="hero-type reveal" aria-hidden="true"><span id="hero-type">ENFP</span></div>
-    </section>
+    <div class="slides" id="slides">
+      <div class="slides-track" id="slides-track">
 
-    <section class="section" id="about">
-      <div class="section-head reveal">
-        <p class="eyebrow">네 가지 방향</p>
-        <h2 class="section-title">나의 마음은<br />어느 쪽으로 기울까요.</h2>
-      </div>
-      <div class="bento">
-        <article class="tile reveal" style="--tint:#ff9500">
-          <p class="tile-label">에너지</p>
-          <p class="tile-pair"><b>E</b><span>/</span><b>I</b></p>
-          <p class="tile-desc">친구들과 함께할 때 힘이 나나요,<br />혼자만의 시간에 힘이 나나요?</p>
-        </article>
-        <article class="tile reveal" style="--tint:#28b14c">
-          <p class="tile-label">바라보는 방법</p>
-          <p class="tile-pair"><b>S</b><span>/</span><b>N</b></p>
-          <p class="tile-desc">눈에 보이는 사실이 먼저인가요,<br />떠오르는 상상이 먼저인가요?</p>
-        </article>
-        <article class="tile reveal" style="--tint:#007aff">
-          <p class="tile-label">결정하는 방법</p>
-          <p class="tile-pair"><b>T</b><span>/</span><b>F</b></p>
-          <p class="tile-desc">무엇이 맞는지 따져 보나요,<br />모두의 마음을 먼저 살피나요?</p>
-        </article>
-        <article class="tile reveal" style="--tint:#af52de">
-          <p class="tile-label">생활 방식</p>
-          <p class="tile-pair"><b>J</b><span>/</span><b>P</b></p>
-          <p class="tile-desc">미리 계획하는 게 편한가요,<br />그때그때 정하는 게 편한가요?</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="section section-gray" id="start">
-      <div class="start-wrap reveal">
-        <p class="eyebrow">준비됐나요</p>
-        <h2 class="section-title">이름과 학년을<br />알려 주세요.</h2>
-        <form id="start-form" class="start-form" autocomplete="off" novalidate>
-          <label class="field">
-            <span class="field-label">이름</span>
-            <input id="in-name" type="text" maxlength="10" placeholder="김하늘" required />
-          </label>
-          <fieldset class="field">
-            <legend class="field-label">학년</legend>
-            <div class="segmented" role="radiogroup" aria-label="학년">
-              <label><input type="radio" name="grade" value="1" /><span>1학년</span></label>
-              <label><input type="radio" name="grade" value="2" /><span>2학년</span></label>
-              <label><input type="radio" name="grade" value="3" /><span>3학년</span></label>
-              <label><input type="radio" name="grade" value="4" /><span>4학년</span></label>
-              <label><input type="radio" name="grade" value="5" /><span>5학년</span></label>
-              <label><input type="radio" name="grade" value="6" /><span>6학년</span></label>
+        <!-- 1쪽: 소개 -->
+        <section class="slide slide-hero" aria-label="1 / 3">
+          <div class="slide-body">
+            <p class="eyebrow">학생을 위한 성격 탐험</p>
+            <h1 class="hero-title">나를 알아가는<br />가장 쉬운 방법.</h1>
+            <p class="hero-sub">초등학생은 12문항, 중·고등학생은 16문항. 정답은 없어요.</p>
+            <div class="hero-cta">
+              <button class="btn btn-primary" type="button" data-go="2">시작하기</button>
+              <button class="link-more" type="button" data-go="1">어떻게 알아보나요 <span aria-hidden="true">›</span></button>
             </div>
-          </fieldset>
-          <button class="btn btn-primary btn-wide" type="submit">탐험 시작하기</button>
-        </form>
-        <p class="fineprint">입력한 이름과 답은 어디에도 저장되지 않으며, 결과지를 인쇄하면 바로 지워집니다.</p>
-      </div>
-    </section>
+            <div class="hero-type" aria-hidden="true"><span id="hero-type">ENFP</span></div>
+          </div>
+        </section>
 
-    <footer class="footer">
-      <p>성격 유형은 나를 정하는 정답이 아니라, 나를 알아가는 하나의 지도예요.</p>
-    </footer>
+        <!-- 2쪽: 네 가지 방향 -->
+        <section class="slide" aria-label="2 / 3">
+          <div class="slide-body wide">
+            <div class="section-head">
+              <p class="eyebrow">네 가지 방향</p>
+              <h2 class="section-title">나의 마음은<br />어느 쪽으로 기울까요.</h2>
+            </div>
+            <div class="bento">
+              <article class="tile" style="--tint:#ff9500">
+                <p class="tile-label">에너지</p>
+                <p class="tile-pair"><b>E</b><span>/</span><b>I</b></p>
+                <p class="tile-desc">친구들과 함께할 때 힘이 나나요, 혼자만의 시간에 힘이 나나요?</p>
+              </article>
+              <article class="tile" style="--tint:#28b14c">
+                <p class="tile-label">바라보는 방법</p>
+                <p class="tile-pair"><b>S</b><span>/</span><b>N</b></p>
+                <p class="tile-desc">눈에 보이는 사실이 먼저인가요, 떠오르는 상상이 먼저인가요?</p>
+              </article>
+              <article class="tile" style="--tint:#007aff">
+                <p class="tile-label">결정하는 방법</p>
+                <p class="tile-pair"><b>T</b><span>/</span><b>F</b></p>
+                <p class="tile-desc">무엇이 맞는지 따져 보나요, 모두의 마음을 먼저 살피나요?</p>
+              </article>
+              <article class="tile" style="--tint:#af52de">
+                <p class="tile-label">생활 방식</p>
+                <p class="tile-pair"><b>J</b><span>/</span><b>P</b></p>
+                <p class="tile-desc">미리 계획하는 게 편한가요, 그때그때 정하는 게 편한가요?</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3쪽: 입력 -->
+        <section class="slide slide-gray" aria-label="3 / 3">
+          <div class="slide-body narrow">
+            <p class="eyebrow">준비됐나요</p>
+            <h2 class="section-title">학교와 학년을<br />알려 주세요.</h2>
+            <form id="start-form" class="start-form" autocomplete="off" novalidate>
+              <fieldset class="field">
+                <legend class="field-label">학교</legend>
+                <div class="segmented seg-3" role="radiogroup" aria-label="학교">
+                  <label><input type="radio" name="level" value="elem" checked /><span>초등학교</span></label>
+                  <label><input type="radio" name="level" value="middle" /><span>중학교</span></label>
+                  <label><input type="radio" name="level" value="high" /><span>고등학교</span></label>
+                </div>
+                <p class="field-hint" id="level-hint">12문항 · 결과지 A4 1장</p>
+              </fieldset>
+              <fieldset class="field">
+                <legend class="field-label">학년</legend>
+                <div class="segmented" id="grade-seg" role="radiogroup" aria-label="학년"></div>
+              </fieldset>
+              <button class="btn btn-primary btn-wide" type="submit">탐험 시작하기</button>
+            </form>
+            <p class="fineprint">이름 같은 개인정보는 받지 않아요. 결과는 QR 코드로만 전달되고 이 기기에는 남지 않아요.</p>
+          </div>
+        </section>
+      </div>
+
+      <nav class="pager" aria-label="페이지 이동">
+        <button class="pager-btn" id="slide-prev" type="button" aria-label="이전 페이지">‹</button>
+        <div class="dots" id="slide-dots">
+          <button type="button" data-go="0" aria-label="1쪽"></button>
+          <button type="button" data-go="1" aria-label="2쪽"></button>
+          <button type="button" data-go="2" aria-label="3쪽"></button>
+        </div>
+        <button class="pager-btn" id="slide-next" type="button" aria-label="다음 페이지">›</button>
+      </nav>
+    </div>
   </main>
 
   <!-- ───────── 2. 질문 ───────── -->
@@ -125,21 +141,46 @@
 
   <!-- ───────── 4. 결과 ───────── -->
   <main id="screen-result" class="screen">
-    <section class="result-hero">
-      <p class="eyebrow" id="result-eyebrow"></p>
-      <h1 class="result-type" id="result-type"></h1>
-      <p class="result-nick" id="result-nick"></p>
-      <div class="hero-cta">
-        <button id="btn-print" class="btn btn-primary" type="button">결과지 인쇄하기</button>
-        <button id="btn-reset" class="link-more" type="button">처음으로 <span aria-hidden="true">›</span></button>
-      </div>
-    </section>
-    <section class="stage">
-      <p class="stage-note">A4 한 장으로 인쇄됩니다 · 인쇄 설정에서 ‘배경 그래픽’을 켜 주세요</p>
-      <div class="sheet-wrap" id="sheet-wrap">
-        <div class="sheet-scale" id="sheet-scale"></div>
-      </div>
-    </section>
+    <div class="result-layout">
+      <section class="result-hero">
+        <p class="eyebrow" id="result-eyebrow"></p>
+        <h1 class="result-type" id="result-type"></h1>
+        <p class="result-nick" id="result-nick"></p>
+        <!-- 교실 화면: QR 보여 주기 -->
+        <div class="kiosk-only">
+          <button class="qr-card" id="qr-card" type="button" aria-label="QR 코드 크게 보기">
+            <canvas id="qr" width="10" height="10"></canvas>
+            <span class="qr-text"><b>휴대폰 카메라로 찍어 보세요</b>결과지를 내 휴대폰에 저장할 수 있어요. 누르면 크게 보여요.</span>
+          </button>
+          <div class="hero-cta">
+            <button id="btn-next" class="btn btn-primary" type="button">다 받았어요 · 다음 친구</button>
+          </div>
+          <p class="stage-note"><b id="countdown">3:00</b> 뒤 결과가 자동으로 지워져요 · 이 기기에는 아무것도 저장되지 않아요</p>
+        </div>
+        <!-- 학생 휴대폰: 내려받기 -->
+        <div class="viewer-only">
+          <label class="field view-name">
+            <span class="field-label">결과지에 이름 넣기 (선택)</span>
+            <input id="in-name-view" type="text" maxlength="10" placeholder="이름은 내 휴대폰 밖으로 나가지 않아요" autocomplete="off" />
+          </label>
+          <div class="hero-cta">
+            <button id="btn-pdf" class="btn btn-primary" type="button">PDF로 저장</button>
+            <button id="btn-img" class="btn btn-secondary" type="button">이미지로 저장</button>
+          </div>
+          <p class="stage-note" id="stage-note"></p>
+        </div>
+      </section>
+      <section class="stage">
+        <div class="sheet-wrap" id="sheet-wrap">
+          <div class="sheet-scale" id="sheet-scale"></div>
+        </div>
+        <nav class="pager sheet-pager" id="sheet-pager" hidden aria-label="결과지 페이지">
+          <button class="pager-btn" id="sheet-prev" type="button" aria-label="이전 장">‹</button>
+          <span class="pager-count" id="sheet-count">1 / 2</span>
+          <button class="pager-btn" id="sheet-next" type="button" aria-label="다음 장">›</button>
+        </nav>
+      </section>
+    </div>
   </main>
 
   <!-- 선생님 설정 -->
@@ -160,16 +201,13 @@
     </form>
   </dialog>
 
-  <!-- 인쇄 후 -->
-  <dialog class="dialog" id="dlg-after">
-    <div class="dialog-body center">
-      <h3>인쇄가 잘 되었나요?</h3>
-      <p><b id="countdown">20</b>초 뒤 결과가 삭제되고 처음 화면으로 돌아갑니다.</p>
-      <div class="dialog-actions stack">
-        <button id="btn-done" class="btn btn-primary" type="button">지금 삭제하기</button>
-        <button id="btn-reprint" class="btn btn-secondary" type="button">다시 인쇄</button>
-      </div>
-    </div>
+  <!-- QR 크게 보기 -->
+  <dialog class="dialog dialog-qr" id="dlg-qr">
+    <form method="dialog" class="dialog-body center">
+      <canvas id="qr-big" width="10" height="10"></canvas>
+      <p>휴대폰 카메라로 찍으면 결과지를 받을 수 있어요</p>
+      <button class="btn btn-secondary" value="close">닫기</button>
+    </form>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
