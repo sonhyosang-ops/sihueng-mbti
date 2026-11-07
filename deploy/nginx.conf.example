@@ -1,0 +1,30 @@
+# nginx 리버스 프록시 예시 — HTTPS로 서비스할 때 (/etc/nginx/sites-available/sihueng-mbti)
+# 인증서는 certbot으로 발급:  sudo certbot --nginx -d mbti.school.example
+# 이 경우 /etc/sihueng-mbti.env 에서  HOST=127.0.0.1  TRUST_PROXY=1  PUBLIC_URL=https://mbti.school.example/  로 설정하세요.
+
+server {
+    listen 80;
+    server_name mbti.school.example;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name mbti.school.example;
+
+    # ssl_certificate     /etc/letsencrypt/live/mbti.school.example/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/mbti.school.example/privkey.pem;
+
+    # 개인정보 보호: 접속 기록을 남기지 않아요
+    access_log off;
+
+    client_max_body_size 8k;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 150s;
+    }
+}

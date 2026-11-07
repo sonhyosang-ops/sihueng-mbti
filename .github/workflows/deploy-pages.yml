@@ -24,8 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # 웹앱 파일만 공개해요 (server.js, deploy/ 등 서버용 파일은 제외)
+      - name: Collect web files
+        run: |
+          mkdir _site
+          cp index.html style.css app.js ai.js data.js _site/
+          cp -r vendor _site/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

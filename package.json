@@ -1,0 +1,17 @@
+{
+  "name": "sihueng-mbti",
+  "version": "1.0.0",
+  "private": true,
+  "description": "학생용 간이 MBTI 성격 탐험 웹앱 (리눅스 서버 실행용)",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.3.0"
+  }
+}

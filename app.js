@@ -1,9 +1,9 @@
-import { DIMENSIONS, QUESTIONS, TYPES, QUESTIONS_TEEN, TYPES_TEEN, LETTER_NOTES, LETTER_ACTIONS } from "./data.js";
+import { TYPES, TYPES_TEEN, LETTER_NOTES, LETTER_ACTIONS } from "./data.js";
+import { LEVELS, gradeText, scoreAnswers, buildClaudeRequest, parseClaudeResponse } from "./ai.js";
 
 // ─────────────────────────────────────────────
 // 설정
 // ─────────────────────────────────────────────
-const MODEL = "claude-opus-5-5";
 const SDK_PATH = "./vendor/anthropic-sdk-1.3.0.js";
 const KEY_STORAGE = "mbti-claude-key"; // 선생님 API 키만 sessionStorage에 임시 보관 (학생 데이터는 절대 저장하지 않음)
 const QR_SECONDS = 180; // QR을 보여 주는 시간. 지나면 자동 삭제
@@ -18,15 +18,9 @@ function freshState() {
   return { name: "", level: "elem", grade: "", date: "", answers: [], index: 0, result: null, ai: null };
 }
 
-// 학교급별 설정: 초등은 12문항·A4 1장, 중·고등은 16문항·A4 2장 상세 결과
-const LEVELS = {
-  elem: { name: "초등학교", short: "초등", grades: 6, questions: QUESTIONS, hint: "12문항 · 결과지 A4 1장" },
-  middle: { name: "중학교", short: "중", grades: 3, questions: QUESTIONS_TEEN, hint: "16문항 · 상세 결과지 A4 2장" },
-  high: { name: "고등학교", short: "고", grades: 3, questions: QUESTIONS_TEEN, hint: "16문항 · 상세 결과지 A4 2장" },
-};
 const isTeen = () => state.level !== "elem";
 const qs = () => LEVELS[state.level].questions;
-const gradeLabel = () => `${LEVELS[state.level].name} ${state.grade}학년`;
+const gradeLabel = () => gradeText(state.level, state.grade);
 
 const $ = (id) => document.getElementById(id);
 const screens = ["start", "quiz", "loading", "result"];
@@ -117,12 +111,26 @@ function safeGet(k) { try { return sessionStorage.getItem(k) || ""; } catch { re
 function safeSet(k, v) { try { v ? sessionStorage.setItem(k, v) : sessionStorage.removeItem(k); } catch { /* 저장 불가 환경은 메모리만 사용 */ } }
 let apiKey = safeGet(KEY_STORAGE);
 
+// 리눅스 서버에서 실행 중이고 서버에 API 키가 설정돼 있으면, 브라우저에 키를 넣을 필요가 없어요
+let serverAI = false;
+let publicBase = ""; // 서버의 PUBLIC_URL (QR 주소의 앞부분)
+
 function refreshStatus() {
   const s = $("ai-status");
-  s.textContent = apiKey ? "AI 맞춤 해설" : "기본 해설";
-  s.classList.toggle("on", !!apiKey);
+  const on = serverAI || !!apiKey;
+  s.textContent = serverAI ? "AI 맞춤 해설 · 서버" : apiKey ? "AI 맞춤 해설" : "기본 해설";
+  s.classList.toggle("on", on);
+  $("btn-teacher").hidden = serverAI;
 }
 refreshStatus();
+fetch("./api/config", { cache: "no-store" })
+  .then((r) => (r.ok ? r.json() : null))
+  .then((c) => {
+    if (!c) return;
+    if (typeof c.publicUrl === "string" && /^https?:\/\//.test(c.publicUrl)) publicBase = c.publicUrl;
+    if (c.ai === true) { serverAI = true; refreshStatus(); }
+  })
+  .catch(() => { /* 정적 호스팅(GitHub Pages)에서는 서버 API가 없어요 */ });
 
 $("btn-teacher").addEventListener("click", () => $("dlg-teacher").showModal());
 $("btn-key-save").addEventListener("click", () => {
@@ -237,152 +245,26 @@ document.addEventListener("keydown", (e) => {
 });
 
 // ─────────────────────────────────────────────
-// 채점 — 지표별 문항 수(3 또는 4)에 맞춰 계산
-// 동점(2:2)이면 그 지표의 첫 문항 답을 따르고 'balanced'로 표시
+// Claude 해설 받기
+// - 리눅스 서버로 실행 중이면: 서버(/api/analyze)가 서버에 보관된 키로 대신 요청해요 (브라우저에 키 없음)
+// - GitHub Pages처럼 서버가 없으면: 선생님이 입력한 키로 브라우저에서 직접 요청해요
+// 어느 쪽이든 보내는 건 학교급·학년·답뿐이고 이름은 없어요.
 // ─────────────────────────────────────────────
-function score() {
-  const Q = qs();
-  const dims = DIMENSIONS.map((d) => {
-    let left = 0, right = 0, first = null;
-    Q.forEach((q, i) => {
-      if (q.dim !== d.key) return;
-      if (first === null) first = state.answers[i];
-      state.answers[i] === "a" ? left++ : right++;
+const score = () => scoreAnswers(state.level, state.answers);
+
+async function askClaude() {
+  if (serverAI) {
+    const res = await fetch("./api/analyze", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ level: state.level, grade: Number(state.grade), answers: state.answers }),
     });
-    const n = left + right;
-    const balanced = left === right;
-    const pick = balanced ? (first === "a" ? d.left : d.right) : left > right ? d.left : d.right;
-    const win = Math.max(left, right);
-    const strength = balanced ? "균형" : win === n ? "뚜렷" : "조금 더";
-    return { ...d, leftCount: left, rightCount: right, n, pick, balanced, strength, pct: Math.round((win / n) * 100) };
-  });
-  return { type: dims.map((d) => d.pick).join(""), dims };
-}
-
-// ─────────────────────────────────────────────
-// Claude API — 학생 이름은 보내지 않아요
-// ─────────────────────────────────────────────
-const SCHEMA_ELEM = {
-  type: "object",
-  properties: {
-    nickname: { type: "string" },
-    summary: { type: "string" },
-    strengths: { type: "array", items: { type: "string" } },
-    growth: { type: "array", items: { type: "string" } },
-    study: { type: "string" },
-    friend: { type: "string" },
-    cheer: { type: "string" },
-  },
-  required: ["nickname", "summary", "strengths", "growth", "study", "friend", "cheer"],
-  additionalProperties: false,
-};
-
-const SCHEMA_TEEN = {
-  type: "object",
-  properties: {
-    nickname: { type: "string" },
-    summary: { type: "string" },
-    dimNotes: {
-      type: "object",
-      properties: { EI: { type: "string" }, SN: { type: "string" }, TF: { type: "string" }, JP: { type: "string" } },
-      required: ["EI", "SN", "TF", "JP"],
-      additionalProperties: false,
-    },
-    strengths: { type: "array", items: { type: "string" } },
-    growth: { type: "array", items: { type: "string" } },
-    study: { type: "string" },
-    relation: { type: "string" },
-    stress: { type: "string" },
-    explore: { type: "array", items: { type: "string" } },
-    actions: { type: "array", items: { type: "string" } },
-    cheer: { type: "string" },
-  },
-  required: ["nickname", "summary", "dimNotes", "strengths", "growth", "study", "relation", "stress", "explore", "actions", "cheer"],
-  additionalProperties: false,
-};
-
-const COMMON_RULES = `- 학생이 실제로 고른 답을 근거로 들어서, 이 학생만을 위한 해설처럼 느껴지게 써.
-- 성격 유형은 정답이나 꼬리표가 아니라 나를 알아가는 도구라는 관점을 지켜. 단점은 '성장 포인트'로 긍정적으로 바꿔 말해.
-- 다른 유형을 깎아내리거나, 진로·능력을 단정하는 말은 쓰지 마.
-- 이모지는 쓰지 마(결과지 디자인에 이미 들어 있어).`;
-
-function systemPromptElem(grade) {
-  return `너는 초등학생을 위한 성격 유형(MBTI) 결과지를 쓰는 다정한 상담 선생님이야.
-독자는 초등학교 ${grade}학년 학생이고, 결과지는 A4 한 장 분량이고, 학생이 자기 휴대폰으로 내려받아 간직해.
-
-글쓰기 원칙:
-- 초등학생이 바로 이해할 쉬운 낱말로, 따뜻한 "~해요" 말투로 써. 학생을 부를 때는 "너"라고 해.
-${COMMON_RULES}
-
-분량(인쇄 칸에 맞춰야 하니 꼭 지켜):
-- nickname: 동물이나 사물에 빗댄 귀여운 별명, 공백 포함 18자 이내
-- summary: 3문장, 공백 포함 150자 이내
-- strengths: 정확히 3개, 각 22자 이내
-- growth: 정확히 2개, 각 38자 이내
-- study: 1~2문장, 70자 이내 (이 학생에게 맞는 공부 방법)
-- friend: 1~2문장, 70자 이내 (친구 관계 팁)
-- cheer: 1~2문장, 55자 이내 (응원 한마디)`;
-}
-
-function systemPromptTeen(gradeText) {
-  return `너는 청소년 진로·상담 선생님이고, 성격 유형(MBTI) 간이 검사의 상세 결과지를 써.
-독자는 ${gradeText} 학생이고, 결과지는 A4 두 장 분량이고, 학생이 자기 휴대폰으로 내려받아 간직해. 스스로를 이해하고 생활에 적용할 수 있게 구체적으로 써.
-
-글쓰기 원칙:
-- 청소년이 존중받는다고 느끼는 자연스러운 "~해요" 말투로 써. 유치한 표현은 피하고, 학생을 부르는 호칭(너, 당신)은 쓰지 마.
-- 각 지표의 점수가 '뚜렷'인지 '조금 더'인지 '균형'인지 반영해서 해석해. '균형'인 지표는 두 성향을 모두 가진 것으로 설명해.
-- explore는 직업을 정해 주는 게 아니라 관심 가져 볼 만한 '분야' 이름이야.
-${COMMON_RULES}
-
-분량(인쇄 칸에 맞춰야 하니 꼭 지켜):
-- nickname: 성격을 잘 드러내는 별명, 공백 포함 16자 이내
-- summary: 4~5문장, 공백 포함 260자 이내
-- dimNotes: EI·SN·TF·JP 각각 1~2문장, 75자 이내 (그 지표에서 이 학생의 모습)
-- strengths: 정확히 4개, 각 24자 이내
-- growth: 정확히 3개, 각 45자 이내
-- study: 2~3문장, 130자 이내 (이 학생에게 맞는 공부 전략)
-- relation: 2문장, 110자 이내 (친구·관계·소통)
-- stress: 2문장, 110자 이내 (스트레스를 받는 상황과 회복 방법)
-- explore: 정확히 4개, 각 10자 이내 (관심 가져 볼 분야)
-- actions: 정확히 3개, 각 50자 이내 (이번 주에 바로 해 볼 수 있는 구체적 행동)
-- cheer: 1~2문장, 60자 이내 (응원 한마디)`;
-}
-
-function userPrompt(type, dims, base) {
-  const Q = qs();
-  const scoreLines = dims
-    .map((d) => `- ${d.left}(${d.leftName}) ${d.leftCount} : ${d.rightCount} ${d.right}(${d.rightName}) → ${d.pick}, ${d.strength}`)
-    .join("\n");
-  const answerLines = Q.map((q, i) => `${i + 1}. ${q.q} → ${q[state.answers[i]].text}`).join("\n");
-  return `결과 유형: ${type}
-기본 별명(참고용, 더 어울리게 바꿔도 돼): ${base.nickname}
-
-지표별 점수(각 ${dims[0].n}문항):
-${scoreLines}
-
-학생이 고른 답:
-${answerLines}
-
-위 내용을 바탕으로 결과지 문구를 JSON으로 작성해 줘.`;
-}
-
-async function askClaude(type, dims, base) {
+    if (!res.ok) throw new Error(`server ${res.status}`);
+    return res.json();
+  }
   const { default: Anthropic } = await import(SDK_PATH);
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true, timeout: 120_000, maxRetries: 1 });
-  const teen = isTeen();
-  const response = await client.beta.messages.create({
-    model: MODEL,
-    max_tokens: 12000,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    output_config: { effort: "low", format: { type: "json_schema", schema: teen ? SCHEMA_TEEN : SCHEMA_ELEM } },
-    system: teen ? systemPromptTeen(gradeLabel()) : systemPromptElem(state.grade),
-    messages: [{ role: "user", content: userPrompt(type, dims, base) }],
-  });
-  if (response.stop_reason === "refusal") throw new Error("refusal");
-  if (response.stop_reason === "max_tokens") throw new Error("max_tokens");
-  const text = response.content.filter((b) => b.type === "text").map((b) => b.text).join("");
-  return JSON.parse(text);
+  return parseClaudeResponse(await client.beta.messages.create(buildClaudeRequest(state.level, state.grade, state.answers)));
 }
 
 // 받침에 따라 '과/와' 고르기
@@ -459,9 +341,9 @@ async function finish() {
 
   const base = baseContent(type, dims);
   let ai = null;
-  if (apiKey) {
+  if (serverAI || apiKey) {
     try {
-      ai = await askClaude(type, dims, base);
+      ai = await askClaude();
     } catch (err) {
       console.warn("Claude API 호출 실패, 기본 해설을 사용합니다:", err);
       toast("AI 연결이 원활하지 않아 기본 해설로 만들었어요.", 4500);
@@ -728,7 +610,7 @@ async function buildShareUrl(withAi = true) {
   const { deflateSync, strToU8 } = await import(PACK_QR);
   const payload = [1, LEVEL_CODE[state.level], +state.grade, state.date, state.answers.join(""), withAi ? packAi(state.ai) : null];
   const data = b64u.enc(deflateSync(strToU8(JSON.stringify(payload)), { level: 9 }));
-  return `${location.origin}${location.pathname}#r=${data}`;
+  return `${publicBase || location.origin + location.pathname}#r=${data}`;
 }
 
 let countdownTimer = null;
@@ -739,6 +621,9 @@ async function showQR() {
     const { QRCode } = await import(PACK_QR);
     qrUrl = await buildShareUrl(true);
     if (qrUrl.length > QR_MAX_URL) qrUrl = await buildShareUrl(false); // 너무 길면 기본 해설로
+    if (!publicBase && /^(localhost|127\.|\[::1\])/.test(location.hostname)) {
+      toast("지금 주소(localhost)는 휴대폰에서 열 수 없어요. 서버 IP 주소로 접속하거나 PUBLIC_URL을 설정해 주세요.", 8000);
+    }
     await QRCode.toCanvas($("qr"), qrUrl, { errorCorrectionLevel: "L", margin: 2, width: 560, color: { dark: "#1d1d1f", light: "#ffffff" } });
   } catch (err) {
     console.error(err);

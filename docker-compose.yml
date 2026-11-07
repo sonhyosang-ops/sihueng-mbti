@@ -1,0 +1,15 @@
+# 사용법: cp deploy/sihueng-mbti.env.example .env  →  .env 편집  →  docker compose up -d
+services:
+  sihueng-mbti:
+    build: .
+    image: sihueng-mbti:latest
+    container_name: sihueng-mbti
+    env_file: .env
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
